@@ -48,6 +48,14 @@ func diffZipHeader(headers1, headers2 []*zip.File) error {
 			return fmt.Errorf("file %s is different: %s", header1.Name, err)
 		}
 	}
+	for _, header2 := range headers2 {
+		index1 := slices.IndexFunc(headers1, func(header1 *zip.File) bool {
+			return header1.Name == header2.Name
+		})
+		if index1 < 0 {
+			return fmt.Errorf("file %s not found in the first zip", header2.Name)
+		}
+	}
 	return nil
 }
 
