@@ -33,6 +33,18 @@ func main() {
 	if err := diffZipHeader(zr1.File, zr2.File); err != nil {
 		log.Fatal(err)
 	}
+
+	checksum1, err := fileChecksum(filePath1)
+	if err != nil {
+		log.Fatalf("failed to calculate checksum for %s: %s", filePath1, err)
+	}
+	checksum2, err := fileChecksum(filePath1)
+	if err != nil {
+		log.Fatalf("failed to calculate checksum for %s: %s", filePath2, err)
+	}
+	if checksum1 != checksum2 {
+		log.Fatalf("files have different content: sha256 sums are not equal %q != %q", checksum1, checksum2)
+	}
 }
 
 func diffZipHeader(headers1, headers2 []*zip.File) error {
@@ -119,6 +131,19 @@ func compareFiles(file1, file2 *zip.File) error {
 
 func zipChecksum(file *zip.File) (string, error) {
 	r, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer closeAndIgnoreError(r)
+	h := sha256.New()
+	if _, err := io.Copy(h, r); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func fileChecksum(filePath string) (string, error) {
+	r, err := os.Open(filePath)
 	if err != nil {
 		return "", err
 	}
